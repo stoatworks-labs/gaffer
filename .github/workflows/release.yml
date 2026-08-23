@@ -1,8 +1,8 @@
 name: release
 
-# Build the Vertigo plugin for the two platforms Resolume runs on:
-#   - macOS   -> universal (arm64 + x86_64) Vertigo.bundle
-#   - Windows -> x64 Vertigo.dll (GLEW static-linked via vcpkg)
+# Build the Gaffer plugin for the two platforms Resolume runs on:
+#   - macOS   -> universal (arm64 + x86_64) Gaffer.bundle
+#   - Windows -> x64 Gaffer.dll (GLEW static-linked via vcpkg)
 # Each ships as a zip; drop the bundle/dll into Resolume's "Extra Effects"
 # folder. The OpenFX build ships as its own zip alongside, because it installs
 # to the OFX folder rather than Resolume's.
@@ -38,7 +38,7 @@ jobs:
       # --- macOS: no extra deps, universal build straight from CMake ---
       - name: Configure (macOS)
         if: runner.os == 'macOS'
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DVERTIGO_BUILD_TOOLS=OFF
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DGAFFER_BUILD_TOOLS=OFF
 
       # --- Windows: GLEW comes from vcpkg, static-linked (static-md keeps the
       #     CRT dynamic so the plugin matches the host) so the .dll has no
@@ -48,7 +48,7 @@ jobs:
         run: >
           cmake -B build -A x64
           -DCMAKE_BUILD_TYPE=Release
-          -DVERTIGO_BUILD_TOOLS=OFF
+          -DGAFFER_BUILD_TOOLS=OFF
           -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
           -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
 
@@ -70,14 +70,14 @@ jobs:
         run: |
           mkdir -p out
           if [ "${{ runner.os }}" = "macOS" ]; then
-            cp -R "build/Vertigo.bundle" "out/Vertigo.bundle"
-            lipo -archs "out/Vertigo.bundle/Contents/MacOS/Vertigo"
+            cp -R "build/Gaffer.bundle" "out/Gaffer.bundle"
+            lipo -archs "out/Gaffer.bundle/Contents/MacOS/Gaffer"
             # Actions runs `shell: bash` as `bash -eo pipefail`, so `cmd | grep -q X`
             # FAILS when grep FINDS its match: grep exits at once, the writer takes
             # SIGPIPE, and pipefail reports the pipeline as failed -- failing the
             # release on a correct binary. It is output-size dependent, so it bites
             # the biggest artefact first. Captured and matched with `case` instead.
-            __symbols=$( nm -gU "out/Vertigo.bundle/Contents/MacOS/Vertigo" )
+            __symbols=$( nm -gU "out/Gaffer.bundle/Contents/MacOS/Gaffer" )
             case "$__symbols" in
               *_plugMain*) ;;
               *) echo "expected _plugMain, got: $__symbols"; exit 1 ;;
@@ -85,21 +85,21 @@ jobs:
             # The registration is a file-scope constructor nothing names, so a
             # linker that dropped its translation unit would still produce a
             # loadable bundle that reports it contains no plugins.
-            __literals=$( strings "out/Vertigo.bundle/Contents/MacOS/Vertigo" )
+            __literals=$( strings "out/Gaffer.bundle/Contents/MacOS/Gaffer" )
             case "$__literals" in
-              *VG01*) ;;
-              *) echo "VG01 missing: the registration was dropped"; exit 1 ;;
+              *GF01*) ;;
+              *) echo "GF01 missing: the registration was dropped"; exit 1 ;;
             esac
           else
-            cp "build/Release/Vertigo.dll" "out/Vertigo.dll"
+            cp "build/Release/Gaffer.dll" "out/Gaffer.dll"
           fi
           # OpenFX build: shipped as its own zip, not folded into the FFGL
           # artefact — it installs to the OFX folder, not Resolume's.
           mkdir -p ofxout
           if [ "${{ runner.os }}" = "macOS" ]; then
-            cp -R "build/Vertigo.ofx.bundle" "ofxout/Vertigo.ofx.bundle"
-            lipo -archs "ofxout/Vertigo.ofx.bundle/Contents/MacOS/Vertigo.ofx"
-            __ofx=$( nm -gU "ofxout/Vertigo.ofx.bundle/Contents/MacOS/Vertigo.ofx" )
+            cp -R "build/Gaffer.ofx.bundle" "ofxout/Gaffer.ofx.bundle"
+            lipo -archs "ofxout/Gaffer.ofx.bundle/Contents/MacOS/Gaffer.ofx"
+            __ofx=$( nm -gU "ofxout/Gaffer.ofx.bundle/Contents/MacOS/Gaffer.ofx" )
             case "$__ofx" in
               *_OfxGetPlugin*) ;;
               *) echo "expected _OfxGetPlugin"; exit 1 ;;
@@ -108,10 +108,10 @@ jobs:
             # there, this is where it surfaces -- as "code object is not signed
             # at all / In subcomponent", which mentions no plist. tools/verify.sh
             # runs the same step locally so it cannot reach a tag.
-            codesign --force --sign - --timestamp=none "ofxout/Vertigo.ofx.bundle"
+            codesign --force --sign - --timestamp=none "ofxout/Gaffer.ofx.bundle"
           else
-            mkdir -p "ofxout/Vertigo.ofx.bundle/Contents/Win64"
-            cp "build/Vertigo.ofx.bundle/Contents/Win64/Vertigo.ofx" "ofxout/Vertigo.ofx.bundle/Contents/Win64/Vertigo.ofx"
+            mkdir -p "ofxout/Gaffer.ofx.bundle/Contents/Win64"
+            cp "build/Gaffer.ofx.bundle/Contents/Win64/Gaffer.ofx" "ofxout/Gaffer.ofx.bundle/Contents/Win64/Gaffer.ofx"
           fi
           ls -R ofxout
           ls -R out
@@ -121,15 +121,15 @@ jobs:
         run: |
           cd out
           if command -v 7z >/dev/null 2>&1; then
-            7z a "../vertigo-${{ matrix.name }}.zip" ./*
+            7z a "../gaffer-${{ matrix.name }}.zip" ./*
           else
-            zip -r "../vertigo-${{ matrix.name }}.zip" ./*
+            zip -r "../gaffer-${{ matrix.name }}.zip" ./*
           fi
           cd ../ofxout
           if command -v 7z >/dev/null 2>&1; then
-            7z a "../vertigo-ofx-${{ matrix.name }}.zip" ./*
+            7z a "../gaffer-ofx-${{ matrix.name }}.zip" ./*
           else
-            zip -r "../vertigo-ofx-${{ matrix.name }}.zip" ./*
+            zip -r "../gaffer-ofx-${{ matrix.name }}.zip" ./*
           fi
 
       - name: Disk image (macOS)
@@ -143,16 +143,16 @@ jobs:
         # README says is the honest shape here.
         run: |
           source scripts/release-lib.sh
-          rl_init "Vertigo" vertigo "${{ steps.ver.outputs.version }}" \
-            com.stoatworks.vertigo "$GITHUB_WORKSPACE"
+          rl_init "Gaffer" gaffer "${{ steps.ver.outputs.version }}" \
+            com.stoatworks.gaffer "$GITHUB_WORKSPACE"
           cp README.md out/ 2>/dev/null || true
-          rl_adhoc_sign "out/Vertigo.bundle"
+          rl_adhoc_sign "out/Gaffer.bundle"
           rl_dmg "${{ matrix.name }}" out
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: vertigo-${{ matrix.name }}
+          name: gaffer-${{ matrix.name }}
           path: |
             *.zip
             *.dmg
@@ -182,8 +182,8 @@ jobs:
           source scripts/release-lib.sh
           version="${GITHUB_REF_NAME#v}"
           case "$version" in [0-9]*) ;; *) version="0.0.0" ;; esac
-          rl_init "Vertigo" vertigo "$version" com.stoatworks.vertigo "$PWD/installers"
-          zip="$(find artifacts -name "vertigo-windows-x86_64.zip" | head -1)"
+          rl_init "Gaffer" gaffer "$version" com.stoatworks.gaffer "$PWD/installers"
+          zip="$(find artifacts -name "gaffer-windows-x86_64.zip" | head -1)"
           if [ -z "$zip" ]; then echo "no Windows artefact, nothing to do"; exit 0; fi
           stage="$RUNNER_TEMP/stage-win"
           rm -rf "$stage"; mkdir -p "$stage"
@@ -195,7 +195,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: vertigo-windows-installer
+          name: gaffer-windows-installer
           path: installers/*
           if-no-files-found: warn
 

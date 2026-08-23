@@ -141,6 +141,34 @@ public:
 	/// not counted in bars.
 	static double BarsPerCue( Sync sync );
 
+	/// Where the barrel is at one instant, with no history at all.
+	///
+	/// An OpenFX host renders frames in whatever order it likes and may render
+	/// the same one twice, so a model that integrates forward from the last
+	/// frame is not usable there. Off, Pull, Sweep and Stutter are all derived
+	/// from the grid rather than accumulated, so all four can be answered
+	/// exactly at any instant -- which is the reason the cue index is a
+	/// floor() of the bar count and not a counter.
+	///
+	/// Follow is the exception and it is not an oversight: it is defined by
+	/// where the Focus control has BEEN, so there is nothing to evaluate. A
+	/// host without a running clock has to simulate it over a look-back window
+	/// instead, which is what the OpenFX build does.
+	///
+	/// The one thing given up here: a stateless Pull assumes the previous move
+	/// finished before the next cue arrived. With a Speed longer than the cue
+	/// spacing the stateful version starts from wherever it had got to and this
+	/// starts from the mark. Only the ends of the range differ, and only while
+	/// a rack is deliberately being asked to outrun its own grid.
+	static double EvaluateStateless( const RackSettings& settings,
+	                                 double seconds, double bars, double barSeconds );
+
+	/// The plane Stutter jumps to on cue `index`, between the two marks. A hash
+	/// rather than a random number generator: the sequence has to be the same
+	/// on every machine and on every replay of the same timeline, or a saved
+	/// composition does not play back the same way twice.
+	static double StutterTarget( double markA, double markB, long long index );
+
 	/// The eased position of a move that is `t` of the way through, 0..1.
 	/// Public because both this and the offline harness need it, and because it
 	/// is the one piece of shaping here that is a matter of taste rather than
@@ -150,12 +178,6 @@ public:
 private:
 	/// Cue index and position within the cue, from the grid plus hand cues.
 	void cuePosition( double now, double bars, long long& index, double& within ) const;
-
-	/// The plane Stutter jumps to on cue `index`. A hash rather than a random
-	/// number generator: the sequence has to be the same on every machine and
-	/// on every replay of the same timeline, or a saved composition does not
-	/// play back the same way twice.
-	double stutterTarget( long long index ) const;
 
 	RackSettings config;
 

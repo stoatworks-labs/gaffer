@@ -31,21 +31,21 @@ jobs:
         # break is not architecture-specific. Passed as a single value with no
         # semicolon, which the shell would split.
         #
-        # VERTIGO_BUILD_TOOLS is ON here where the release build turns it OFF:
-        # vgtest is a large slice of the C++ and carries the only independent
+        # GAFFER_BUILD_TOOLS is ON here where the release build turns it OFF:
+        # gftest is a large slice of the C++ and carries the only independent
         # implementation of the depth solve, so compiling it is most of the
         # value of this job.
         run: >
           cmake -B build
           -DCMAKE_BUILD_TYPE=Release
           -DCMAKE_OSX_ARCHITECTURES=arm64
-          -DVERTIGO_BUILD_TOOLS=ON
+          -DGAFFER_BUILD_TOOLS=ON
 
       - name: Build
         run: cmake --build build --config Release --parallel
 
       # The measurements themselves are NOT run here, and the reason is not
-      # that they are slow. Hosted macOS runners have no GPU, so vgtest would
+      # that they are slow. Hosted macOS runners have no GPU, so gftest would
       # fall back to a software context or fail to make one at all — and a
       # number measured off llvmpipe is not evidence about the shader that
       # ships. tools/verify.sh is a local step, on a real machine, and the
@@ -53,7 +53,7 @@ jobs:
       - name: Verify the shader compiles and the plugin registers
         run: |
           set -euo pipefail
-          binary="build/Vertigo.bundle/Contents/MacOS/Vertigo"
+          binary="build/Gaffer.bundle/Contents/MacOS/Gaffer"
           symbols=$(nm -gU "$binary")
           case "$symbols" in
             *_plugMain*) echo "ok: plugMain exported" ;;
@@ -61,8 +61,8 @@ jobs:
           esac
           literals=$(strings "$binary")
           case "$literals" in
-            *VG01*) echo "ok: registration survived the link" ;;
-            *) echo "VG01 not in the binary — the registration TU was dropped"; exit 1 ;;
+            *GF01*) echo "ok: registration survived the link" ;;
+            *) echo "GF01 not in the binary — the registration TU was dropped"; exit 1 ;;
           esac
 
       # Uploading is not only for the artefact. This repo has no package
@@ -72,6 +72,6 @@ jobs:
       # actually exercises the action being bumped.
       - uses: actions/upload-artifact@v7
         with:
-          name: vertigo-macos-arm64
+          name: gaffer-macos-arm64
           path: build/*.bundle
           if-no-files-found: error

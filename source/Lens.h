@@ -214,9 +214,15 @@ double apertureFromParam( float value );
 /// close-focus, where both are dramatic.
 double phiFromParam( float value );
 
-/// Highlight slider -> the exponent that out-of-focus highlights are weighted
-/// by before averaging. 0 is a plain average, which is the only setting that
-/// conserves light.
+/// Highlight slider -> the exponent of the power mean the gather averages
+/// with: raise the samples, average, take the root. Exactly 1 at zero, which
+/// is a plain average and the only setting that conserves light.
+///
+/// A power mean and NOT a per-sample weighting. Weighting normalises by the
+/// sum of the weights, so at a strong setting the answer is whichever tap
+/// happened to be brightest -- on high-contrast material that draws the
+/// sampling pattern rather than a disc, and it does not improve with more taps
+/// because it is variance in the estimator rather than noise.
 double highlightFromParam( float value );
 
 /// Breathing slider -> how much of the physical breathing to show, 0..1.

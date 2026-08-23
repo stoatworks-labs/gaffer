@@ -114,9 +114,15 @@ double phiFromParam( float value )
 
 double highlightFromParam( float value )
 {
-	//0..4. Above 4 the weighting is so top-heavy that the average is a single
-	//tap and the bokeh turns to sparkle.
-	return 4.0 * std::clamp( double( value ), 0.0, 1.0 );
+	//The exponent of a power mean: raise, average, take the root. **Exactly 1
+	//at zero**, which is a plain average and the only setting that conserves
+	//light -- and both the shader and the OpenFX build branch on that equality,
+	//so it has to be exact rather than nearly so.
+	//
+	//3 at the top. Beyond about 3 the mean is following the brightest thing in
+	//the disc closely enough that a highlight stops being a disc and starts
+	//being a hard-edged blob.
+	return 1.0 + 2.0 * std::clamp( double( value ), 0.0, 1.0 );
 }
 
 double breathingFromParam( float value )

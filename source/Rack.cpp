@@ -79,9 +79,54 @@ void Rack::Reset( double atFocus )
 	started     = true;
 }
 
-double Rack::stutterTarget( long long index ) const
+double Rack::StutterTarget( double markA, double markB, long long index )
 {
-	return config.markA + ( config.markB - config.markA ) * hashUnit( index );
+	return markA + ( markB - markA ) * hashUnit( index );
+}
+
+double Rack::EvaluateStateless( const RackSettings& s, double seconds, double bars, double barSeconds )
+{
+	const double a = std::clamp( s.markA, 0.0, 1.0 );
+	const double b = std::clamp( s.markB, 0.0, 1.0 );
+
+	if( s.mode == RackMode::Off || s.mode == RackMode::Follow )
+		return a;
+
+	const double period = BarsPerCue( s.sync );
+	const double rate   = std::max( s.rateHz, 1e-4 );
+
+	//How far through the sequence we are, and how long one cue lasts. Manual
+	//has no grid to derive anything from, so it runs free at Rate -- which is
+	//also what Sweep does with Manual selected, and is why the two share this.
+	const double position    = period > 0.0 ? bars / period : seconds * rate;
+	const double cueSeconds  = period > 0.0 ? period * std::max( barSeconds, 1e-6 ) : 1.0 / rate;
+
+	if( s.mode == RackMode::Sweep )
+	{
+		const double f  = position - std::floor( position );
+		const double tri = 1.0 - std::fabs( 2.0 * f - 1.0 );
+		return a + ( b - a ) * Shape( tri, s.ease );
+	}
+
+	const double whole    = std::floor( position );
+	const long long index = static_cast< long long >( whole );
+	const double elapsed  = ( position - whole ) * cueSeconds;
+	const double t        = elapsed / std::max( s.travelSeconds, 1e-4 );
+
+	double from;
+	double to;
+	if( s.mode == RackMode::Stutter )
+	{
+		from = StutterTarget( a, b, index - 1 );
+		to   = StutterTarget( a, b, index );
+	}
+	else
+	{
+		from = ( index & 1 ) ? a : b;
+		to   = ( index & 1 ) ? b : a;
+	}
+
+	return std::clamp( from + ( to - from ) * Shape( t, s.ease ), 0.0, 1.0 );
 }
 
 void Rack::cuePosition( double now, double bars, long long& index, double& within ) const
@@ -215,7 +260,7 @@ void Rack::Update( double now, double bars, double dt, bool fired )
 
 		moveFrom  = focus;
 		moveTo    = config.mode == RackMode::Stutter
-		              ? stutterTarget( index )
+		              ? StutterTarget( config.markA, config.markB, index )
 		              : ( ( index & 1 ) ? b : a );
 		moveStart = now;
 		moving    = true;

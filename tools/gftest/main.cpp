@@ -716,6 +716,83 @@ int runFocusTest()
 		f.check( moves > 0, "a hand cue did nothing in Manual sync" );
 	}
 
+	//--- the stateless evaluator agrees with the stateful one -------------
+	//
+	// This is the check that guards the second copy. An OpenFX host renders
+	// frames in any order, so the OFX build cannot integrate forward and uses
+	// Rack::EvaluateStateless instead -- which means the rack now exists twice,
+	// and two copies of one thing drift. The FFGL build and the OpenFX build
+	// disagreeing about where the focus is would be invisible in either one
+	// alone and obvious the moment somebody compared them.
+	{
+		int compared  = 0;
+		double worst  = 0.0;
+		const char* worstWhere = "";
+
+		struct Case
+		{
+			RackMode mode;
+			Sync sync;
+			const char* name;
+		};
+
+		const Case cases[] = {
+			{ RackMode::Off, Sync::Bar, "Off" },
+			{ RackMode::Sweep, Sync::Bar, "Sweep on the bar" },
+			{ RackMode::Sweep, Sync::Free, "Sweep free-running" },
+			{ RackMode::Pull, Sync::Quarter, "Pull on quarters" },
+			{ RackMode::Stutter, Sync::Eighth, "Stutter on eighths" },
+		};
+
+		for( const Case& c : cases )
+		{
+			RackSettings s;
+			s.mode          = c.mode;
+			s.sync          = c.sync;
+			s.markA         = 0.85;
+			s.markB         = 0.10;
+			s.rateHz        = 1.5;
+			s.ease          = 1.0;
+
+			//Comfortably shorter than the cue spacing, which is the condition
+			//the stateless form documents: it assumes each move finished before
+			//the next cue arrived. A rack deliberately outrunning its own grid
+			//is the one place the two are allowed to differ.
+			s.travelSeconds = 0.15;
+
+			Rack rack;
+			rack.Configure( s );
+
+			for( int i = 0; i < 1200; ++i )
+			{
+				const double now = i * kDt;
+				rack.Update( now, barsAt( now ), kDt, false );
+
+				//The first cue period is skipped: the stateful rack starts at
+				//mark A and the stateless one assumes a sequence already
+				//running, so they only have to agree once one has.
+				if( now < 1.0 )
+					continue;
+
+				const double stateless =
+				    Rack::EvaluateStateless( s, now, barsAt( now ), kBarSeconds );
+
+				const double gap = std::fabs( stateless - rack.Focus() );
+				if( gap > worst )
+				{
+					worst      = gap;
+					worstWhere = c.name;
+				}
+				++compared;
+			}
+		}
+
+		std::printf( "  stateless: worst disagreement %.2e over %d frames (%s)\n",
+		             worst, compared, worstWhere );
+		f.check( worst < 1e-9,
+		         "the stateless evaluator and the stateful one disagree -- FFGL and OpenFX would render different racks" );
+	}
+
 	if( f.count == 0 )
 		std::printf( "  the focus puller holds every property it claims\n" );
 

@@ -48,7 +48,7 @@ uniform float CocMax;      //the largest it can be here, and so the gather radiu
 
 uniform float Blades;      //0 round, else the number of aperture blades
 uniform float BladeRot;    //iris angle, radians
-uniform float Highlight;   //exponent on luma before averaging; 0 conserves light
+uniform float Highlight;   //power-mean exponent; exactly 1 is a plain average
 
 uniform vec2 Shift;        //camera shake, height units
 uniform float Roll;        //camera roll, radians
@@ -200,6 +200,31 @@ float disparityAt( vec2 p )
 	return clamp( 0.5 + DepthGain * ( shaped - 0.5 ), 0.0, 1.0 );
 }
 
+/// The highlight transform, and its inverse.
+///
+/// A power mean: raise the samples, average, take the root. That is how an
+/// out-of-focus highlight is bought, and the obvious alternative -- weighting
+/// each sample by its own brightness -- is a trap that was in here first.
+///
+/// Weighting normalises by the sum of the weights, so at a strong setting the
+/// answer is whichever tap happened to be brightest. On high-contrast material
+/// that is not a smooth disc, it is a picture of the sampling pattern, and it
+/// does not improve with more taps because it is variance in the ESTIMATOR
+/// rather than noise. A power mean leaves the area weights alone and transforms
+/// the values, so it stays exactly as smooth as the plain average.
+///
+/// At exactly 1 both of these are the identity, which is what makes Highlight a
+/// control that can be turned off rather than merely turned down.
+vec3 toHighlight( vec3 c )
+{
+	return Highlight == 1.0 ? c : pow( max( c, vec3( 0.0 ) ), vec3( Highlight ) );
+}
+
+vec3 fromHighlight( vec3 c )
+{
+	return Highlight == 1.0 ? c : pow( max( c, vec3( 0.0 ) ), vec3( 1.0 / Highlight ) );
+}
+
 //---------------------------------------------------------------------------
 // The camera body.
 //
@@ -341,15 +366,23 @@ void main()
 	//which is what keeps a sharp subject sharp in front of a blurred
 	//background -- and what makes a fully focused frame come back byte for byte
 	//identical.
+	vec4 centre = fetchPicture( base );
+
 	vec4 sameSum;
 	float sameW;
 	{
-		vec4 c = fetchPicture( base );
-		sameW  = minR2 / max( centreCoc * centreCoc, minR2 );
-		if( Highlight > 0.0 )
-			sameW *= pow( dot( c.rgb, kLumaWeights ) + 1e-3, Highlight );
-		sameSum = c * sameW;
+		sameW   = minR2 / max( centreCoc * centreCoc, minR2 );
+		sameSum = vec4( toHighlight( centre.rgb ), centre.a ) * sameW;
 	}
+
+	//How many loop taps were accepted. Zero has to be handled separately, and
+	//not as an optimisation: it is the case where nothing reached this pixel but
+	//its own surface, and the answer is then that surface EXACTLY. Going through
+	//the power mean and back would round-trip the colour through two pow() calls
+	//and cost an occasional last bit -- which is the difference between a
+	//fully focused frame being byte-identical to its input and merely looking
+	//like it.
+	int accepted = 0;
 
 	for( int i = 0; i < n; ++i )
 	{
@@ -430,13 +463,8 @@ void main()
 		//Area represented, over area spread across.
 		float w = cov * area / ( kPi * max( rad * rad, minR2 ) );
 
-		//Deliberately not energy conserving, and the only thing here that is
-		//not. An out-of-focus highlight on real film or a real sensor blooms
-		//because the source was brighter than the medium could hold; there is
-		//no such headroom in an 8-bit clip, so it is bought with a weighting.
-		//At zero this is exactly 1 and the conservation claim holds.
-		if( Highlight > 0.0 )
-			w *= pow( dot( c.rgb, kLumaWeights ) + 1e-3, Highlight );
+		c.rgb = toHighlight( c.rgb );
+		++accepted;
 
 		if( d > centreD + kOcclusionMargin )
 		{
@@ -454,6 +482,15 @@ void main()
 			sameSum += c * w;
 			sameW += w;
 		}
+	}
+
+	if( accepted == 0 )
+	{
+		//Nothing but this pixel's own surface reached it. See the note above:
+		//the answer is that surface, untouched.
+		centre.rgb = clamp( centre.rgb, vec3( 0.0 ), vec3( centre.a ) );
+		fragColor  = centre;
+		return;
 	}
 
 	vec4 same = sameW > 0.0 ? sameSum / sameW : vec4( 0.0 );
@@ -475,10 +512,13 @@ void main()
 		result      = mix( result, nearSum / nearW, alpha );
 	}
 
+	result.rgb = fromHighlight( result.rgb );
+
 	//Premultiplied in, premultiplied out. Averaging premultiplied samples is
 	//the correct filter -- it is unpremultiplied averaging that goes wrong at a
 	//transparent edge -- so there is nothing to undo, only the invariant the
-	//engine expects to hold.
+	//engine expects to hold. The power mean can push a channel a hair past the
+	//alpha it came in under, which is what this also catches.
 	result.rgb = clamp( result.rgb, vec3( 0.0 ), vec3( result.a ) );
 
 	fragColor = result;
