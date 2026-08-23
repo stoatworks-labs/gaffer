@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+	Parameterised on purpose. This file is one of the things copied from repo to
+	repo when a new plugin starts, and the version it was copied from here had
+	the PREVIOUS plugin's name hardcoded into CFBundleExecutable.
+
+	That does not fail the build. The bundle assembles, the binary is correct,
+	`lipo` and `nm` both pass, and the plugin loads. It fails at RELEASE time,
+	in codesign, with "code object is not signed at all / In subcomponent:
+	.../Contents/MacOS/<name>.ofx" — because codesign reads the plist, looks for
+	an executable that is not there, and treats the real binary as a nested
+	object that should have been signed first. Nothing in that message mentions
+	the plist, and nothing before the release job runs it.
+
+	tools/verify.sh now checks CFBundleExecutable against the binary on disk and
+	does an ad-hoc sign, so the next copy of this file cannot reach a tag.
+-->
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>@PROJECT_NAME@.ofx</string>
+	<key>CFBundleIdentifier</key>
+	<string>@OFX_BUNDLE_IDENTIFIER@</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>@PROJECT_NAME@</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleVersion</key>
+	<string>@PROJECT_VERSION@</string>
+</dict>
+</plist>
