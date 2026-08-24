@@ -596,3 +596,10 @@ a log entry every frame for the rest of the show.
 ```
 
 `GAFFER_LOG_DIR` overrides the location.
+
+## Notes
+
+`docs/NOTES.md` carries this repo's working notes — current status, decisions
+already made, and the traps that have actually bitten. Read it before changing
+anything non-obvious. Cross-cutting fleet knowledge lives in
+[fleet-notes](https://github.com/stoatworks-labs/fleet-notes).
