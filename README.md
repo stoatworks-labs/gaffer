@@ -19,6 +19,46 @@ Arena and Avenue, and an [OpenFX](https://openeffects.org) effect for DaVinci
 Resolve, Nuke, Natron and Vegas.
 
 <!-- downloads:start -->
+
+## Download
+
+**[v0.1.1](https://github.com/stoatworks-labs/gaffer/releases/tag/v0.1.1)** — prebuilt for macOS, Windows and Linux. Pick your platform:
+
+<details>
+<summary><b>macOS</b> — Universal (Apple Silicon + Intel)</summary>
+
+| Build | Download | Size |
+| --- | --- | --- |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`gaffer-0.1.1-macos-universal.dmg`](https://github.com/stoatworks-labs/gaffer/releases/download/v0.1.1/gaffer-0.1.1-macos-universal.dmg) | 228 KB |
+| Universal (Apple Silicon + Intel) · .zip archive | [`gaffer-macos-universal.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-macos-universal.zip) | 189 KB |
+| Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`gaffer-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-ofx-macos-universal.zip) | 268 KB |
+
+</details>
+
+<details>
+<summary><b>Windows</b> — x64</summary>
+
+| Build | Download | Size |
+| --- | --- | --- |
+| x64 · .exe installer | [`gaffer-0.1.1-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/gaffer/releases/download/v0.1.1/gaffer-0.1.1-windows-x86_64-setup.exe) | 226 KB |
+| x64 · .zip archive | [`gaffer-windows-x86_64.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-windows-x86_64.zip) | 119 KB |
+| x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`gaffer-ofx-windows-x86_64.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-ofx-windows-x86_64.zip) | 79 KB |
+
+</details>
+
+<details>
+<summary><b>Linux</b> — x64</summary>
+
+| Build | Download | Size |
+| --- | --- | --- |
+| x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`gaffer-ofx-linux-x86_64.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-ofx-linux-x86_64.zip) | 738 KB |
+
+</details>
+
+All builds, checksums and release notes: [github.com/stoatworks-labs/gaffer/releases](https://github.com/stoatworks-labs/gaffer/releases).
+
+macOS builds are signed and notarised and open normally. The Windows builds are unsigned, so SmartScreen warns once.
+
 <!-- downloads:end -->
 
 ## What it does
