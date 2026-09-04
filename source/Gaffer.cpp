@@ -21,7 +21,7 @@ static CFFGLPluginInfo PluginInfo(
 	0,                                                        // Plugin major version number
 	1,                                                        // Plugin minor version number
 	FF_EFFECT,                                                // Plugin type
-	"Audio-reactive lens: bass rattle and rack focus on depth",// Plugin description
+	"A simulated lens on a depth map, with the music holding it.\n\nA lens has exactly one plane in sharp focus. Everything else lands on the sensor as a disc rather than a point, and the diameter of that disc is the whole subject here.\n\nThe blur is linear in the difference of reciprocal depths - that is not an approximation made for the shader's benefit, it is what the thin-lens equation says once the algebra cancels. So racking focus moves a real plane through the scene rather than fading between two blurs.\n\nThen the music holds the focus ring: bass rattles the lens and the level pulls the plane towards you.\n\nStart from a Preset, at the bottom.",// Plugin description
 	"gaffer FFGL effect"                                      // About
 );
 
