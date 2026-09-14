@@ -232,7 +232,7 @@ What that does **not** cover:
   synthetic one.
 - **No real depth pass has been through it.** Only a radial card, a luma
   checkerboard and a flat grey half-frame.
-- **The Windows build has never been run**, and no release has been cut.
+- **The Windows build has never been run.** It is compiled in CI and ships with every release; v0.1.3 is current.
 - **Nothing has been timed.** Extreme is 128 taps, each with its own depth
   fetch, and each of those is a 5-tap when Smooth is up.
 
