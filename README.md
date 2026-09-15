@@ -18,6 +18,10 @@ A simulated lens on a depth map, with the music holding it — an
 Arena and Avenue, and an [OpenFX](https://openeffects.org) effect for DaVinci
 Resolve, Nuke, Natron and Vegas.
 
+![The gaffer browser demo: the synthetic scene through the lens, with the plugin's lens, depth and rig parameters beside it](docs/screenshots/gaffer-demo.png)
+
+<sub>The browser demo, not the plugin: gaffer's own GLSL ported to WebGL2 and running on a generated scene in the page — the same parameters and the same maths as the FFGL build, with the lens, depth and rig controls it declares on the right. Not a Resolume capture.</sub>
+
 <!-- downloads:start -->
 
 ## Download
