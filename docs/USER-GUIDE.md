@@ -4,6 +4,10 @@ A simulated lens on a depth map, with the music holding it. This guide is about
 using it. `README.md` is the reference for every control; `AGENTS.md` is about
 how it works inside.
 
+![The browser demo, not the plugin: gaffer's own GLSL ported to WebGL2 and running on a generated scene in the page — the same parameters and the same maths as…](screenshots/gaffer-demo.png)
+
+*The browser demo, not the plugin: gaffer's own GLSL ported to WebGL2 and running on a generated scene in the page — the same parameters and the same maths as the FFGL build, with the lens, depth and rig controls it declares on the right. Not a Resolume capture.*
+
 ---
 
 ## Before anything else: give it some depth
