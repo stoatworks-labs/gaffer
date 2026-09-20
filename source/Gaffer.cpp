@@ -15,7 +15,7 @@ using namespace gaffer;
 static CFFGLPluginInfo PluginInfo(
 	PluginFactory< Gaffer >,                                  // Create method
 	"GF01",                                                   // Plugin unique ID of maximum length 4.
-	"gaffer",                                                 // Plugin name
+	"SW Gaffer",                                              // Plugin name
 	2,                                                        // API major version number
 	1,                                                        // API minor version number
 	0,                                                        // Plugin major version number
