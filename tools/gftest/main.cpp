@@ -40,6 +40,21 @@
     map are independent, so it is the only one where an impulse can be put
     through a known, uniform depth. Testing the lens through Luma would mean the
     impulse WAS the depth map.
+
+    `--pipe` takes the fleet's frame format, so the project video can be
+    rendered through the real plugin rather than filmed:
+
+        ffmpeg -i in.mov -f rawvideo -pix_fmt rgba - \
+          | gftest --pipe --size 1920x1080 --fps 30 [--script cues.txt] [--audio] \
+          | ffmpeg -f rawvideo -pix_fmt rgba -s 1920x1080 -i - out.mov
+
+    `--script` is a plain text file of `frame  Parameter Name  value` lines,
+    the same format as the rest of the fleet's harnesses. Values are held
+    before the first key and after the last, and linearly interpolated
+    between -- options and events included, so a sheet that wants a step
+    writes the old value on the frame before the new one, and presses Pull as
+    0, 1, 0. The clock, the transport (--bpm) and the synthetic spectrum
+    (--audio) advance at --fps per frame, exactly as a host would drive them.
 */
 
 #include "Audio.h"
@@ -56,10 +71,16 @@
 
 #include <algorithm>
 #include <cmath>
+#include <csignal>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <map>
+#include <sstream>
 #include <string>
+#include <unistd.h>
+#include <utility>
 #include <vector>
 
 using namespace gaffer;
@@ -1421,6 +1442,193 @@ int runNullTest( Gaffer& plugin, const Rig& rig, const std::vector< unsigned cha
 	return f.count;
 }
 
+//---------------------------------------------------------------------------
+// --pipe cue sheet: one 'frame Name Value' per line, the fleet's format.
+//---------------------------------------------------------------------------
+using Track = std::vector< std::pair< int, float > >;
+
+std::map< std::string, Track > loadScript( const std::string& path, std::string& error )
+{
+	std::map< std::string, Track > tracks;
+	std::ifstream file( path );
+	if( !file )
+	{
+		error = "cannot open " + path;
+		return tracks;
+	}
+	std::string line;
+	int lineNumber = 0;
+	while( std::getline( file, line ) )
+	{
+		++lineNumber;
+		const size_t hash = line.find( '#' );
+		if( hash != std::string::npos )
+			line.erase( hash );
+		std::istringstream in( line );
+		int frame = 0;
+		if( !( in >> frame ) )
+			continue;//blank or comment
+		//The name is everything up to the last token, because parameters have
+		//spaces in them ("Focal Length") and the value never does.
+		std::vector< std::string > words;
+		std::string word;
+		while( in >> word )
+			words.push_back( word );
+		if( words.size() < 2 )
+		{
+			error = path + ":" + std::to_string( lineNumber ) + ": expected `frame Parameter Name value`";
+			return {};
+		}
+		const float value = std::strtof( words.back().c_str(), nullptr );
+		words.pop_back();
+		std::string name = words.front();
+		for( size_t i = 1; i < words.size(); ++i )
+			name += " " + words[ i ];
+		tracks[ name ].emplace_back( frame, value );
+	}
+	for( auto& entry : tracks )
+		std::sort( entry.second.begin(), entry.second.end() );
+	return tracks;
+}
+
+float valueAt( const Track& track, int frame )
+{
+	if( track.empty() )
+		return 0.0f;
+	if( frame <= track.front().first )
+		return track.front().second;
+	if( frame >= track.back().first )
+		return track.back().second;
+	for( size_t i = 1; i < track.size(); ++i )
+		if( frame <= track[ i ].first )
+		{
+			const auto& a    = track[ i - 1 ];
+			const auto& b    = track[ i ];
+			const float span = float( b.first - a.first );
+			const float t    = span > 0.0f ? float( frame - a.first ) / span : 1.0f;
+			return a.second + ( b.second - a.second ) * t;
+		}
+	return track.back().second;
+}
+
+//---------------------------------------------------------------------------
+// --pipe: raw RGBA frames on stdin, the plugin's frames on stdout.
+//
+// Everything but the video goes to stderr: one stray byte in stdout is a torn
+// frame for the rest of the reel. Exit 2 for a sheet naming no parameter, 1
+// for a failed render or a reader that has gone, 0 at the end of the stream.
+//
+// The clock is synthetic and runs at --fps, so a filmed sequence advances at
+// the rate it will be played back at rather than at whatever rate the pipe
+// happens to deliver -- a stall in ffmpeg must not read as the rig settling.
+//---------------------------------------------------------------------------
+int runPipe( Gaffer& plugin, const Rig& rig, const std::string& scriptPath, double fps,
+             bool audio, double bpm, int failRender )
+{
+	std::map< unsigned int, Track > automation;
+	if( !scriptPath.empty() )
+	{
+		std::string error;
+		const std::map< std::string, Track > tracks = loadScript( scriptPath, error );
+		if( !error.empty() )
+		{
+			std::fprintf( stderr, "gftest: %s\n", error.c_str() );
+			return 2;
+		}
+		//Resolve the names once, up front, and refuse to run on one that is not
+		//a parameter. A misspelled name that silently did nothing would give a
+		//take that looks deliberate and is wrong.
+		for( const auto& entry : tracks )
+		{
+			const int index = indexOfParameter( plugin, entry.first );
+			if( index < 0 )
+			{
+				std::fprintf( stderr, "gftest: script names '%s', which is not a parameter (try --list)\n", entry.first.c_str() );
+				return 2;
+			}
+			automation[ (unsigned int)index ] = entry.second;
+		}
+	}
+
+	//A closed stdout must be a failed write we can see, not a SIGPIPE that
+	//kills the process with 141 before it can say so.
+	std::signal( SIGPIPE, SIG_IGN );
+
+	const size_t stride = (size_t)rig.width * 4;
+	std::vector< unsigned char > frame( stride * rig.height );
+	std::vector< unsigned char > flipped( frame.size() );
+	int status = 0;
+	for( int index = 0;; ++index )
+	{
+		size_t got = 0;
+		while( got < frame.size() )
+		{
+			const ssize_t n = read( STDIN_FILENO, frame.data() + got, frame.size() - got );
+			if( n <= 0 )
+				break;
+			got += (size_t)n;
+		}
+		//A partial frame is the end of the stream, never a frame.
+		if( got < frame.size() )
+		{
+			if( got > 0 )
+				std::fprintf( stderr, "gftest: partial frame at the end (%zu of %zu bytes, %dx%d): dropped\n", got, frame.size(), rig.width, rig.height );
+			break;
+		}
+
+		//Through the plugin's own setter, so a cue moves what a slider would.
+		for( const auto& track : automation )
+			plugin.SetFloatParameter( track.first, valueAt( track.second, index ) );
+
+		//The host's clock, transport and spectrum, one frame on.
+		const double t = index / fps;
+		plugin.SetTime( t );
+		if( bpm > 0.0 )
+		{
+			const double bars = t / ( 240.0 / bpm );
+			plugin.SetBeatInfo( float( bpm ), float( bars - std::floor( bars ) ) );
+		}
+		if( audio )
+			injectSpectrum( plugin, t );
+
+		//Flipped on the way in: a raw frame arrives top row first and GL wants
+		//bottom row first.
+		for( int y = 0; y < rig.height; ++y )
+			std::memcpy( flipped.data() + (size_t)y * stride,
+			             frame.data() + (size_t)( rig.height - 1 - y ) * stride, stride );
+		glBindTexture( GL_TEXTURE_2D, rig.source );
+		glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, rig.width, rig.height, GL_RGBA, GL_UNSIGNED_BYTE, flipped.data() );
+		glBindTexture( GL_TEXTURE_2D, 0 );
+
+		const bool rendered = index != failRender && runPass( plugin, rig.source, rig.fbo, rig.width, rig.height );
+		if( !rendered )
+		{
+			std::fprintf( stderr, "gftest: render failed at frame %d\n", index );
+			status = 1;
+			break;
+		}
+
+		const std::vector< unsigned char > out = readBack( rig.fbo, rig.width, rig.height );
+		size_t written                         = 0;
+		while( written < out.size() )
+		{
+			const ssize_t put = write( STDOUT_FILENO, out.data() + written, out.size() - written );
+			if( put <= 0 )
+				break;
+			written += (size_t)put;
+		}
+		//The reader has gone: rendering on into a closed pipe is work nobody
+		//will see, and a short frame is worse than none.
+		if( written < out.size() )
+		{
+			std::fprintf( stderr, "gftest: stdout closed at frame %d\n", index );
+			status = 1;
+			break;
+		}
+	}
+	return status;
+}
+
 void usage()
 {
 	std::printf(
@@ -1440,6 +1648,7 @@ void usage()
 		"  Shared:\n"
 		"    --width N          output width (default 640)\n"
 		"    --height N         output height (default 360)\n"
+		"    --size WxH         both at once\n"
 		"    --set \"Name=V\"     set a parameter by its display name, 0..1\n"
 		"    --depth-level V    the level filling the depth half (default 0.75)\n"
 		"    --block N          the impulse's size in texture pixels (default 20)\n"
@@ -1448,7 +1657,13 @@ void usage()
 		"    --audio            inject a synthetic kick-and-hat spectrum\n"
 		"    --bpm B            the transport tempo to report (default 120)\n"
 		"    --trace            print the focus and camera state of every frame\n"
-		"    --list             print every parameter and its default, then exit\n" );
+		"    --list             print every parameter and its default, then exit\n"
+		"\n"
+		"  The fleet's frame pipe:\n"
+		"    --pipe             raw RGBA frames on stdin, raw RGBA frames on stdout\n"
+		"    --script PATH      parameter cues for --pipe: 'frame Name Value'\n"
+		"    --fps N            the clock, transport and spectrum advance 1/N s a frame (default 60)\n"
+		"                       --audio and --bpm apply to the pipe as they do to --frames\n" );
 }
 } // namespace
 
@@ -1473,6 +1688,10 @@ int main( int argc, char** argv )
 	bool audio      = false;
 	double bpm      = 120.0;
 	bool trace      = false;
+	bool pipe       = false;
+	double fps      = 60.0;
+	std::string scriptPath;
+	int failRender  = -1;
 
 	std::vector< std::pair< std::string, float > > overrides;
 
@@ -1490,6 +1709,26 @@ int main( int argc, char** argv )
 			width = std::atoi( next().c_str() );
 		else if( arg == "--height" )
 			height = std::atoi( next().c_str() );
+		else if( arg == "--size" )
+		{
+			const std::string value = next();
+			const size_t cross      = value.find( 'x' );
+			if( cross == std::string::npos )
+			{
+				std::fprintf( stderr, "gftest: --size wants WxH, got '%s'\n", value.c_str() );
+				return 2;
+			}
+			width  = std::atoi( value.substr( 0, cross ).c_str() );
+			height = std::atoi( value.substr( cross + 1 ).c_str() );
+		}
+		else if( arg == "--pipe" )
+			pipe = true;
+		else if( arg == "--script" )
+			scriptPath = next();
+		else if( arg == "--fps" )
+			fps = std::atof( next().c_str() );
+		else if( arg == "--fail-render-at" )
+			failRender = std::atoi( next().c_str() );//test hook: verify.sh proves --pipe exits 1 on a failed render
 		else if( arg == "--depth-level" )
 			depthLevel = std::atof( next().c_str() );
 		else if( arg == "--block" )
@@ -1558,9 +1797,9 @@ int main( int argc, char** argv )
 		return failures == 0 ? 0 : 1;
 	}
 
-	if( width <= 0 || height <= 0 )
+	if( width <= 0 || height <= 0 || fps <= 0.0 )
 	{
-		std::fprintf( stderr, "gftest: width and height must both be positive\n" );
+		std::fprintf( stderr, "gftest: width, height and fps must all be positive\n" );
 		return 2;
 	}
 
@@ -1603,7 +1842,8 @@ int main( int argc, char** argv )
 		return 1;
 	}
 
-	std::printf( "GL %s / %s\n", glGetString( GL_VERSION ), glGetString( GL_RENDERER ) );
+	//To stderr in pipe mode: stdout is the video there.
+	std::fprintf( pipe ? stderr : stdout, "GL %s / %s\n", glGetString( GL_VERSION ), glGetString( GL_RENDERER ) );
 
 	FFGLViewportStruct viewport = { 0, 0, (FFUInt32)width, (FFUInt32)height };
 	if( plugin.InitGL( &viewport ) != FF_SUCCESS )
@@ -1638,6 +1878,9 @@ int main( int argc, char** argv )
 		std::fprintf( stderr, "gftest: incomplete framebuffer\n" );
 		return shutdown( 1 );
 	}
+
+	if( pipe )
+		return shutdown( runPipe( plugin, rig, scriptPath, fps, audio, bpm, failRender ) );
 
 	if( nullTest )
 		return shutdown( runNullTest( plugin, rig, input ) );
