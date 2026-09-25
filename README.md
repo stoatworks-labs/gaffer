@@ -22,6 +22,10 @@ Resolve, Nuke, Natron and Vegas.
 
 <sub>The browser demo, not the plugin: gaffer's own GLSL ported to WebGL2 and running on a generated scene in the page — the same parameters and the same maths as the FFGL build, with the lens, depth and rig controls it declares on the right. Not a Resolume capture.</sub>
 
+[![gaffer — depth of field with a rig that rings, for Resolume](docs/video-thumb.png)](https://www.youtube.com/watch?v=XUdCae0fhRU)
+
+*[Watch it](https://www.youtube.com/watch?v=XUdCae0fhRU) — 55 seconds: the aperture opening and the focal plane sliding out to the corners, a flat field of highlights brought back as discs and then into focus, Luma depth with the plane crossing the lights, Pull racking on the bar with Breathing up, Sweep and Stutter, the rig rung by a synthetic kick on a heavy tripod and a light head, Damping and Roll, and Aperture and Breathing to zero: the pinhole, and the clip untouched. Rendered by the plugin's own harness over Resolume's bundled demo clips, not captured from Resolume.*
+
 <!-- downloads:start -->
 
 ## Download
@@ -198,9 +202,12 @@ shaking the frame before you have seen what it does to a still picture. Shake,
 Roll, Defocus and the rig itself are all set to something useful — turning up
 the one control is the whole gesture.
 
-**A pinhole is exact.** Aperture at zero returns the picture unchanged, byte for
-byte — and so does a frame with the focal plane exactly on a flat depth field,
-with the whole gather running. Both are measured, not asserted.
+**A pinhole is exact.** Aperture at zero with Breathing at zero returns the
+picture unchanged, byte for byte — and so does a frame with the focal plane
+exactly on a flat depth field, with the whole gather running. Both are
+measured, not asserted. Breathing is the catch: it scales the frame with the
+focus even through a pinhole (1.0079 at the default Focus 0.55 and Breathing
+0.35), so Aperture alone is only the null with Breathing at zero or Focus at 0.5.
 
 ## Status
 

@@ -202,8 +202,11 @@ your own machine before committing to it in a show.
 Worth knowing, because they are the fastest way to prove the effect is doing
 what you think:
 
-- **Aperture at zero** is a pinhole, and the picture comes out untouched. Not
-  approximately — byte for byte.
+- **Aperture at zero, with Breathing at zero,** is a pinhole, and the picture
+  comes out untouched. Not approximately — byte for byte. Leave Breathing up and
+  the frame still creeps with the focus through a pinhole (a 0.8% scale at the
+  default Focus 0.55 and Breathing 0.35), because breathing is the lens moving,
+  not the aperture; at Focus 0.5 it is neutral.
 - **Depth Gain flat with Focus at 0.5** is a scene at one distance with the
   focal plane exactly on it. Also untouched, byte for byte, with the whole
   gather running.
