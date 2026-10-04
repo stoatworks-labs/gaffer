@@ -9,9 +9,9 @@
 > light it neither created nor destroyed measured at 1.0000 of the pinhole. The
 > focus puller and the rig are asserted directly over tens of thousands of
 > frames, and both nulls are exact to the byte. It has **never been loaded into
-> Resolume, or into any OpenFX host**, no audio has ever reached it, and no
-> Windows build has been run (see [Status](#status)). Check it in your own rig
-> before trusting it in a show.
+> Resolume**, the only OpenFX host it has rendered in is Resolve's Fusion page,
+> no audio has ever reached it, and no Windows build has been run (see
+> [Status](#status)). Check it in your own rig before trusting it in a show.
 
 A simulated lens on a depth map, with the music holding it — an
 [FFGL](https://github.com/resolume/ffgl) effect for [Resolume](https://resolume.com)
@@ -218,7 +218,7 @@ focus even through a pinhole (1.0079 at the default Focus 0.55 and Breathing
 
 ## Status
 
-Verified offline, and only offline:
+Verified offline:
 
 | Check | Result |
 | --- | --- |
@@ -241,8 +241,10 @@ Verified offline, and only offline:
 What that does **not** cover:
 
 - **It has never been loaded into Resolume.** Not once.
-- **It has never been loaded into Resolve**, or any other OpenFX host. The OFX
-  build has only met `ofxprobe`.
+- **In Resolve it has only been a Fusion tool.** v0.1.5 fixes the OpenFX build
+  there — the earlier builds failed every render on the Fusion page — and the
+  fix has rendered in a Fusion render job in Resolve Studio 21.1. The Edit and
+  Color pages, Nuke, Natron and Vegas have never seen it.
 - **No audio has ever reached it.** The FFT reader has only seen the harness's
   synthetic kick-and-hat. Whether Resolume's spectrum has the level the onset
   threshold assumes is the first thing to check.
@@ -250,7 +252,7 @@ What that does **not** cover:
   synthetic one.
 - **No real depth pass has been through it.** Only a radial card, a luma
   checkerboard and a flat grey half-frame.
-- **The Windows build has never been run.** It is compiled in CI and ships with every release; v0.1.3 is current.
+- **The Windows build has never been run.** It is compiled in CI and ships with every release; v0.1.5 is current.
 - **Nothing has been timed.** Extreme is 128 taps, each with its own depth
   fetch, and each of those is a 5-tap when Smooth is up.
 

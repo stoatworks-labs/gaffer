@@ -583,10 +583,12 @@ Three things worth running there, all of which pass today:
 - **It has never been loaded into Resolume.** Not once. Everything here is the
   offline harness and `ofxprobe`. `cmake --install` puts the bundle where Arena
   looks.
-- **It has never been loaded into Resolve** or any other OpenFX host. The OFX
-  build has only met `ofxprobe`, so real texture sizes, tiling behaviour and
-  premultiplication in a real host are unconfirmed — exactly what an offline
-  harness cannot tell you, because it supplies its own images.
+- **In Resolve it has only been a Fusion tool** (2026-10-04, the v0.1.5
+  frame-rate fix, rendered in a Fusion render job). The Edit and Color pages and
+  every other OpenFX host are untried; real texture sizes, tiling behaviour and
+  premultiplication in a real host are unconfirmed beyond that one render —
+  exactly what an offline harness cannot tell you, because it supplies its own
+  images.
 - **No audio has ever reached it.** The FFT reader has only ever seen `gftest`'s
   synthetic kick-and-hat. Whether Resolume's spectrum has the level and shape
   the onset detector's threshold assumes is the first thing to check in a host.
