@@ -398,6 +398,33 @@ correct frame — until `codesign` in the release job, after the tag, with a
 message about a "subcomponent" that never mentions the plist. `verify.sh` runs
 that exact step locally.
 
+### ☠️ Resolve's Fusion page reports no frame rate, and a missing property throws
+
+Found 2026-10-03 in a real DaVinci Resolve Studio 21.1, on the fleet's sibling ports
+(Fusion page: MediaIn → OFX tool → MediaOut, then a render job): the job failed with
+"The Fusion composition … could not be processed successfully". Fusion gives
+`kOfxImageEffectPropFrameRate` on neither the effect nor any clip, reports every
+clip's `kOfxImageEffectPropFrameRange` as [0, 0], and leaves out the unmapped rate
+and range. The Support library turns a missing property into a C++ exception
+(`PropertyUnknownToHost`), and one thrown out of `render` is
+`kOfxStatErrMissingHostFeature`: a failed frame. This port read the clip's rate
+unguarded, so it failed every frame there.
+
+`framesPerSecond()` in `source/ofx/GafferOFX.cpp` asks the output clip, the source
+clip and the effect, each in its own `try`, and takes the first positive, finite
+rate; otherwise 24, Resolve's default timeline rate. So in Fusion the rack, the
+Tempo and the Kick run as if the composition were 24 fps, which the plugin
+description and the README both say. A host that reports zero now gets 24 as well,
+where this file used to assume 25. **Read no host property in an action without a
+guard**, and never let a clip's frame range bound a fetch: Fusion's [0, 0] is not a
+one-frame clip. This port reads no frame range.
+
+Checked against a test host that withholds the same properties (`ofxprobe --quirks
+fusion`, a scratch build of resolume-ofx-bridge's probe): the previous build fails
+under it with `kOfxStatErrMissingHostFeature`; this one renders, byte-identical to a
+24 fps host's render and unlike a 25 or 30 fps one, in the plugin's own context and
+in General; and a host that reports a rate gets exactly the output it got before.
+
 ## 5. Testing
 
 ```bash

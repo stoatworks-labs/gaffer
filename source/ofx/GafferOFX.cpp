@@ -73,6 +73,7 @@ constexpr const char* kPluginDescription =
 	"drives it off the Tempo instead: a camera in front of a stack is a mass "
 	"on a spring and answers at its own frequency rather than the drummer's.\n\n"
 	"Aperture at zero is a pinhole, and a pinhole is the null.\n\n"
+	"Fusion reports no frame rate; there, time-based controls assume 24 fps.\n\n"
 	"https://stoatworks-labs.com";
 
 constexpr const char* kParamPreset    = "preset";
@@ -666,6 +667,46 @@ double kickEnvelope( double seconds, double barSeconds, int kick, double release
 	return std::exp( -since / std::max( releaseSeconds, 1e-3 ) );
 }
 
+/// The frame rate when the host reports none: 24, Resolve's default timeline
+/// rate. Resolve's Fusion page reports no frame rate anywhere.
+constexpr double kFallbackFrameRate = 24.0;
+
+/// OFX time is in frames. This is the first positive, finite frame rate the
+/// host gives -- the output clip's, the source clip's, the effect's -- else
+/// kFallbackFrameRate. Each read is its own try: Resolve's Fusion page gives
+/// kOfxImageEffectPropFrameRate on neither the effect nor any clip, the
+/// Support library throws on a property the host lacks, and a throw out of
+/// render fails the render -- in Fusion, a composition that "could not be
+/// processed successfully".
+double framesPerSecond( const OFX::ImageEffect& effect, const OFX::Clip* output, const OFX::Clip* source )
+{
+	const auto usable = []( double rate ) { return std::isfinite( rate ) && rate > 0.0; };
+	for( const OFX::Clip* clip : { output, source } )
+	{
+		if( clip == nullptr )
+			continue;
+		try
+		{
+			const double rate = clip->getFrameRate();
+			if( usable( rate ) )
+				return rate;
+		}
+		catch( ... )
+		{
+		}
+	}
+	try
+	{
+		const double rate = effect.getFrameRate();
+		if( usable( rate ) )
+			return rate;
+	}
+	catch( ... )
+	{
+	}
+	return kFallbackFrameRate;
+}
+
 class GafferPlugin : public OFX::ImageEffect
 {
 public:
@@ -925,7 +966,7 @@ private:
 	//-----------------------------------------------------------------------
 	LensSettings settingsAtTime( double t ) const
 	{
-		const double fps        = dstClip->getFrameRate() > 0.0 ? dstClip->getFrameRate() : 25.0;
+		const double fps        = framesPerSecond( *this, dstClip, srcClip );
 		const double seconds    = t / fps;
 		const double bpm        = std::clamp( tempo->getValueAtTime( t ), 20.0, 300.0 );
 		const double barSeconds = 240.0 / bpm;//four beats to the bar

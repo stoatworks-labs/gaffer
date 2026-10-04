@@ -125,6 +125,13 @@ warning; the Windows ones are unsigned and SmartScreen will object once. See
 `/Library/OFX/Plugins` (macOS) or `C:\Program Files\Common Files\OFX\Plugins`
 (Windows). It appears under **Stoatworks**.
 
+**Fusion reports no frame rate; there, time-based controls assume 24 fps.**
+Resolve's Fusion page gives an OpenFX plugin no frame rate at all, and the first
+OpenFX builds failed every render there. Now Gaffer falls back to 24, Resolve's
+default timeline rate, so in Fusion the rack, the Tempo and the Kick run as if the
+composition were 24 fps whatever its real rate. A host that reports a rate,
+Resolve's Edit page included, gets its own.
+
 ## Controls
 
 ### Lens
