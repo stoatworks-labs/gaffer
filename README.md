@@ -30,14 +30,14 @@ Resolve, Nuke, Natron and Vegas.
 
 ## Download
 
-**[v0.1.4](https://github.com/stoatworks-labs/gaffer/releases/tag/v0.1.4)** — prebuilt for macOS, Windows and Linux. Pick your platform:
+**[v0.1.5](https://github.com/stoatworks-labs/gaffer/releases/tag/v0.1.5)** — prebuilt for macOS, Windows and Linux. Pick your platform:
 
 <details>
 <summary><b>macOS</b> — Universal (Apple Silicon + Intel)</summary>
 
 | Build | Download | Size |
 | --- | --- | --- |
-| Universal (Apple Silicon + Intel) · .dmg disk image | [`gaffer-0.1.4-macos-universal.dmg`](https://github.com/stoatworks-labs/gaffer/releases/download/v0.1.4/gaffer-0.1.4-macos-universal.dmg) | 229 KB |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`gaffer-0.1.5-macos-universal.dmg`](https://github.com/stoatworks-labs/gaffer/releases/download/v0.1.5/gaffer-0.1.5-macos-universal.dmg) | 230 KB |
 | Universal (Apple Silicon + Intel) · .zip archive | [`gaffer-macos-universal.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-macos-universal.zip) | 190 KB |
 | Universal (Apple Silicon + Intel) · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`gaffer-ofx-macos-universal.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-ofx-macos-universal.zip) | 268 KB |
 
@@ -48,9 +48,9 @@ Resolve, Nuke, Natron and Vegas.
 
 | Build | Download | Size |
 | --- | --- | --- |
-| x64 · .exe installer | [`gaffer-0.1.4-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/gaffer/releases/download/v0.1.4/gaffer-0.1.4-windows-x86_64-setup.exe) | 226 KB |
+| x64 · .exe installer | [`gaffer-0.1.5-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/gaffer/releases/download/v0.1.5/gaffer-0.1.5-windows-x86_64-setup.exe) | 227 KB |
 | x64 · .zip archive | [`gaffer-windows-x86_64.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-windows-x86_64.zip) | 119 KB |
-| x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`gaffer-ofx-windows-x86_64.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-ofx-windows-x86_64.zip) | 79 KB |
+| x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`gaffer-ofx-windows-x86_64.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-ofx-windows-x86_64.zip) | 80 KB |
 
 </details>
 
@@ -59,7 +59,7 @@ Resolve, Nuke, Natron and Vegas.
 
 | Build | Download | Size |
 | --- | --- | --- |
-| x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`gaffer-ofx-linux-x86_64.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-ofx-linux-x86_64.zip) | 738 KB |
+| x64 · .zip archive (OpenFX — Resolve, Vegas, Nuke) | [`gaffer-ofx-linux-x86_64.zip`](https://github.com/stoatworks-labs/gaffer/releases/latest/download/gaffer-ofx-linux-x86_64.zip) | 737 KB |
 
 </details>
 
