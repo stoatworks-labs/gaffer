@@ -1,40 +1,43 @@
 # gaffer — user guide
 
-A simulated lens on a depth map, with the music holding it. This guide is about
-using it. `README.md` is the reference for every control; `AGENTS.md` is about
-how it works inside.
+gaffer is a simulated lens on a depth map, with the music holding the camera: shallow depth of
+field, a focus puller and a camera rig that rattles on the kick, as an FFGL effect for Resolume
+Arena and Avenue and an OpenFX effect for Resolve, Nuke, Natron and Vegas.
 
-![The browser demo, not the plugin: gaffer's own GLSL ported to WebGL2 and running on a generated scene in the page — the same parameters and the same maths as…](screenshots/gaffer-demo.png)
+This guide is about using it. `README.md` is the reference for every control, and `AGENTS.md`
+covers how it works inside.
 
-*The browser demo, not the plugin: gaffer's own GLSL ported to WebGL2 and running on a generated scene in the page — the same parameters and the same maths as the FFGL build, with the lens, depth and rig controls it declares on the right. Not a Resolume capture.*
+![The browser demo rather than the plugin: gaffer's own GLSL ported to WebGL2, running on a scene the page generates, with the plugin's lens, depth and rig controls beside it](screenshots/gaffer-demo.png)
+
+*That's the browser demo rather than the plugin: gaffer's own GLSL ported to WebGL2 and running on a scene the page generates, with the same parameters and the same maths as the FFGL build, and the lens, depth and rig controls it declares on the right. It isn't a Resolume capture.*
 
 ---
 
 ## Before anything else: give it some depth
 
-gaffer blurs by distance, so it needs to know what is far away. It has five
-answers and they are not interchangeable.
+gaffer blurs by distance, so it needs to know what's far away. It has five
+answers to that, and they aren't interchangeable.
 
-**If you have no depth information at all** — an ordinary clip, a camera feed, a
-generator — use **Radial**. It invents a field: near on the optical axis, far at
-the corners. Nothing is read out of the picture, so it cannot fail, and what you
+**If you've no depth information at all** (an ordinary clip, a camera feed, a
+generator), use **Radial**. It makes up a field: near on the optical axis, far at
+the corners. Nothing is read out of the picture, so it can't fail, and what you
 get is the *look* of a shallow lens rather than a lens. On a centred subject
-against a busy background it is convincing. On a flat graphic it is a vignette
+against a busy background it's convincing. On a flat graphic it's a vignette
 that goes soft.
 
 **If your clip already carries depth in a channel**, use **Luma** or **Alpha**.
-Alpha is the good one: a rendered depth pass baked into the alpha channel is
+Alpha's the good one: a rendered depth pass baked into the alpha channel is
 real depth and gets a real result. Luma turns brightness into distance, which is
 either exactly what you want (a greyscale depth clip) or an effect in its own
-right (anything else) — bright things go one way, dark things the other, and
-that is worth trying deliberately before you dismiss it.
+right (anything else). Bright things go one way, dark things the other, and
+it's worth trying on purpose before you dismiss it.
 
 **If you can author the clip**, use **Split H** or **Split V**. Render the
 picture in the left half (or the top) and the depth map in the right half (or
 the bottom), double-width or double-height. This is the only mode where the
 picture and the depth are completely independent, so the depth map can be as
 detailed as you like without touching a pixel of the image. Every depth-carrying
-interchange format that is not a bespoke container does it this way, so a file
+interchange format that isn't a bespoke container does it this way, so a file
 authored for something else usually drops straight in.
 
 > **Split modes stretch the picture half over the whole frame.** Put the clip on
@@ -46,44 +49,44 @@ authored for something else usually drops straight in.
 Three controls shape whatever the depth source gave you, and they matter more
 than they look:
 
-- **Depth Gain** is signed. A quarter of the way up is *flat* — one distance,
-  one uniform blur over the whole frame, which is a legitimate look and also the
-  fastest way to check the lens is doing anything at all. Below that the field
+- **Depth Gain** is signed. A quarter of the way up is *flat*: one distance,
+  one uniform blur over the whole frame, which is a perfectly good look and also the
+  quickest way to check the lens is doing anything at all. Below that the field
   inverts, which is what you need when a depth map was authored with near =
   black.
 - **Falloff** decides where most of the scene sits between the near and far
-  ends. Turn it up if everything is bunched at one end of the barrel and the
+  ends. Turn it up if everything's bunched at one end of the barrel and the
   Focus control feels like it only works over a third of its travel.
 - **Smooth** blurs the *depth map*, never the picture. A depth pass with hard
   edges makes blur with hard edges, which the eye reads as a cut-out rather than
-  as a lens. This is the fix. It does nothing in Radial, correctly — a formula
+  a lens. This is the fix. It does nothing in Radial, and rightly so: a formula
   has no noise to smooth.
 
 ---
 
 ## Recipe: the bass rattles the camera
 
-The one most people come for.
+The one most people are here for.
 
-1. Route audio to the effect. In Resolume that is the **Audio** parameter's
-   source picker — Local, Composition or External.
-2. **Band → Low.** It is the default, and it is the point.
+1. Route audio to the effect. In Resolume that's the **Audio** parameter's
+   source picker: Local, Composition or External.
+2. **Band → Low.** It's the default, and it's the point.
 3. Turn **Drive** up. It starts at zero on purpose: everything else in the group
    is already set to something useful, so this one control is the whole gesture.
 4. Watch the frame on a kick. If it does nothing, **Threshold** is too high. If
-   it never stops moving, it is too low.
+   it never stops moving, it's too low.
 
 Then shape the rig, which is where the character is:
 
-- **Resonance** is what the camera is standing on. Low (2–6 Hz) is a heavy
+- **Resonance** is what the camera's standing on. Low (2–6 Hz) is a heavy
   tripod on a concrete floor: a slow, heavy lurch. High (15–24 Hz) is a light
   head on a hollow stage: a fast buzz. Nothing in between is wrong.
 - **Damping** is how long it rings. At the bottom one kick keeps the frame
-  moving for most of a bar — which sounds like a mistake and is, in fact,
-  exactly what a badly clamped rig does. At the top each hit is a single lurch
+  moving for most of a bar, which sounds like a mistake and is in fact just
+  what a badly clamped rig does. At the top each hit is a single lurch
   and it stops.
 - **Shake** and **Roll** are how far it moves and how far it tips. Roll is worth
-  more than you would think: a frame that only translates reads as a shaking
+  more than you'd think: a frame that only translates reads as a shaking
   *screen*, and a frame that tips reads as a shaking *camera*.
 - **Defocus** knocks the focal plane on each hit. The lens elements are part of
   the rig too. This is what makes the picture go soft on the drop rather than
@@ -91,11 +94,11 @@ Then shape the rig, which is where the character is:
 
 > **Release** is how fast the level falls after a hit. Short (down near the
 > bottom) makes each kick a distinct event; long smears them into a single
-> swell. If the rig feels like it is responding to the *tune* rather than to the
+> swell. If the rig feels like it's responding to the *tune* rather than to the
 > *hits*, shorten it.
 
 **Edges** decides what shows where the shake looks past the picture. Clamp is
-the default and is invisible; Transparent is right if you are compositing over
+the default and you won't see it; Transparent is right if you're compositing over
 something; Mirror is the film-ish one.
 
 ---
@@ -103,28 +106,27 @@ something; Mirror is the film-ish one.
 ## Recipe: a rack focus on the bar
 
 1. **Rack → Pull.**
-2. Set **Focus** (mark A) and **Mark B** to the two planes you want. Watching
-   the picture while you drag Focus with Rack on Off is the easy way to find
-   them.
+2. Set **Focus** (mark A) and **Mark B** to the two planes you want. The easy way
+   to find them is to watch the picture while you drag Focus with Rack on Off.
 3. **Sync → Bar** (or 1/2, or whatever the track wants).
 4. **Speed** is how long the move takes. Real racks are 0.3–1 second. Make sure
-   it is comfortably shorter than the gap between cues or the rack never
+   it's comfortably shorter than the gap between cues or the rack never
    arrives.
-5. **Ease** at 1 is a hand on a follow focus. At 0 it is a motor. Leave it near
+5. **Ease** at 1 is a hand on a follow focus. At 0 it's a motor. Leave it near
    1 unless you want the mechanical version.
 
 **Breathing** is worth turning up here. A real lens changes its field of view
-slightly as it racks, and that tiny creep is a large part of why a rack focus
+slightly as it racks, and that tiny creep is a big part of why a rack focus
 reads as a *lens* rather than as a blur crossfade. Push **Focal Length** up as
 well and both the breathing and the depth-of-field collapse get more dramatic,
-because on a real lens they are the same thing.
+because on a real lens they're the same thing.
 
 ### Variations
 
 - **Pull on the kick instead of the bar.** Set **Sync → Manual**. Now nothing
   fires the rack except the **Pull** button and the audio transient, so the
   focus racks when the drummer says so. Turn **Drive** down to zero if you want
-  the focus moving but the camera still — the two are deliberately separate.
+  the focus moving but the camera still; the two are kept separate on purpose.
 - **Follow.** Set **Rack → Follow** and animate **Focus** yourself, from a
   dashboard, a MIDI fader or a timeline. The lens lags behind your hand at the
   speed **Speed** allows, which is what makes an animated focus look pulled
@@ -136,40 +138,39 @@ because on a real lens they are the same thing.
 
 ## Recipe: polling through the focal planes
 
-The fast end of **Sweep**, and it is a different effect from everything above.
+The fast end of **Sweep**, and it's a different effect from everything above.
 
 1. **Rack → Sweep.**
-2. **Focus → 1.0**, **Mark B → 0.0** — the whole barrel.
+2. **Focus → 1.0**, **Mark B → 0.0**: the whole barrel.
 3. **Sync → Free**, **Rate** up high. Above about 8 Hz the focal plane is
    scanning through the entire depth of the picture faster than the eye can
    track, and every part of the frame takes its turn being the sharp one.
 4. **Ease** *down*, near 0. At 1 the sweep dwells at each end; at 0 it moves
    through at a constant rate, which is what makes it read as a scan rather than
-   as a wobble.
-5. **Aperture** up. There is no point scanning a focal plane that barely blurs
+   a wobble.
+5. **Aperture** up. There's no point scanning a focal plane that barely blurs
    anything.
 
-The **Focus Strobe** preset is exactly this. Try it against **Sync → 1/8** as
+The **Focus Strobe** preset is just this. Try it against **Sync → 1/8** as
 well: locked to the grid it stops being a texture and becomes a part.
 
 ---
 
 ## The iris, and why bokeh is a shape
 
-Out-of-focus highlights take the shape of the aperture. That is not a stylistic
-choice, it is what a lens does — and it is the difference between "blurry" and
-"a lens".
+Out-of-focus highlights take the shape of the aperture, because that's what a lens
+does, and it's the difference between "blurry" and "a lens".
 
 - **Blades.** Round is a real answer (mirror lenses, some fast primes wide
   open), but 6 is the commonest iris there is and is the default. Five is the
   most obviously "photographic". Nine is very nearly round.
-- **Rotation** turns the iris. On a still frame it does nothing you would
-  notice; animate it slowly under a field of specular highlights and it is
+- **Rotation** turns the iris. On a still frame it does nothing you'd
+  notice; animate it slowly under a field of specular highlights and it's
   lovely.
 - **Highlight** is the one that makes bokeh look like bokeh. The disc is
-  averaged with a *power mean* — raise, average, take the root — so a small
-  bright thing comes back as a distinct disc instead of a smear. It is the only
-  control here that does not conserve light, and that is deliberate: a real
+  averaged with a *power mean* (raise, average, take the root), so a small
+  bright thing comes back as a distinct disc instead of a smear. It's the only
+  control here that doesn't conserve light, and that's on purpose: a real
   highlight blooms because the source was brighter than the medium could hold,
   and an 8-bit clip has no such headroom. At zero you get an honest average and
   no balls, exactly.
@@ -181,38 +182,38 @@ blades, Highlight up.
 
 ## Quality, and what it costs
 
-**Quality** sets how many samples the gather takes — 16, 32, 64 or 128. It does
-**not** change how big the blur is or what shape the bokeh is, only how smoothly
-the disc is filled in.
+**Quality** sets how many samples the gather takes: 16, 32, 64 or 128. It
+**doesn't** change how big the blur is or what shape the bokeh is, only how
+smoothly the disc is filled in.
 
-Where it shows: a small, bright thing spread over a big disc. A specular
+Where it shows is a small, bright thing spread over a big disc. A specular
 highlight at Fast with the aperture wide open draws the individual samples as a
 spiral of dots rather than a filled circle. Ordinary footage hides this, because
 neighbouring pixels' discs overlap.
 
 So: **Fast for a busy clip, Best or Extreme for anything with hard specular
-highlights and a wide aperture.** Nothing has been timed yet, and Extreme with
-Smooth up is 128 samples each doing five depth reads — check the frame rate on
+highlights and a wide aperture.** Nothing's been timed yet, and Extreme with
+Smooth up is 128 samples each doing five depth reads, so check the frame rate on
 your own machine before committing to it in a show.
 
 ---
 
 ## Two things that are exactly nothing
 
-Worth knowing, because they are the fastest way to prove the effect is doing
+Worth knowing, because they're the quickest way to prove the effect is doing
 what you think:
 
 - **Aperture at zero, with Breathing at zero,** is a pinhole, and the picture
-  comes out untouched. Not approximately — byte for byte. Leave Breathing up and
+  comes out untouched, byte for byte rather than roughly. Leave Breathing up and
   the frame still creeps with the focus through a pinhole (a 0.8% scale at the
   default Focus 0.55 and Breathing 0.35), because breathing is the lens moving,
-  not the aperture; at Focus 0.5 it is neutral.
+  not the aperture; at Focus 0.5 it's neutral.
 - **Depth Gain flat with Focus at 0.5** is a scene at one distance with the
   focal plane exactly on it. Also untouched, byte for byte, with the whole
   gather running.
 
-If either of those changes the picture on your machine, something is wrong and
-it is worth reporting.
+If either of those changes the picture on your machine, something's wrong and
+it's worth reporting.
 
 ---
 
@@ -221,13 +222,13 @@ it is worth reporting.
 **Nothing happens at all.** Aperture is at zero, or the depth field is flat and
 Focus is sitting on it. Turn Aperture up first.
 
-**The whole frame is soft, evenly.** Your depth field has no variation — Depth
+**The whole frame is soft, evenly.** Your depth field has no variation: Depth
 Gain near the flat setting, or a depth source with nothing in it (Alpha on a
-clip with no alpha, Split H on a clip that is not side-by-side). Check by
-switching to Radial: if Radial gives you a sharp middle and soft corners, the
+clip with no alpha, Split H on a clip that isn't side-by-side). Check by
+switching to Radial. If Radial gives you a sharp middle and soft corners, the
 lens is fine and the depth is the problem.
 
-**The blur is inside out** — the background is sharp and the subject is soft.
+**The blur is inside out**: the background's sharp and the subject's soft.
 Your depth map is authored the other way up. Push Depth Gain below its flat
 point to invert it.
 
@@ -238,20 +239,20 @@ Turn **Smooth** up.
 long, so the level never falls far enough between hits for the next one to
 register as an arrival.
 
-**The camera does not shake at all.** In order: is audio routed? Is Drive above
+**The camera doesn't shake at all.** In order: is audio routed? Is Drive above
 zero? Is Threshold too high? Is Band on something the track actually has content
 in?
 
 **The rack never reaches the second mark.** Speed is longer than the gap between
 cues. Either shorten Speed or use a slower Sync division.
 
-**Presets snap back to Custom.** That should not happen — it is a bug worth
+**Presets snap back to Custom.** That shouldn't happen, so it's a bug worth
 reporting, with the host and version. The preset system here is built to survive
 a host that pushes its own parameter values back at the plugin, which is what
 causes that symptom elsewhere.
 
-**The effect appears in the list but does nothing, and no error.** That is a
-shader that would not compile. There is a log:
+**The effect appears in the list but does nothing, and there's no error.** That's
+a shader that wouldn't compile. There's a log:
 
 ```
 ~/Library/Logs/gaffer/gaffer.<date>.log          # macOS
@@ -265,15 +266,15 @@ usually most of the answer.
 
 ## In Resolve, Nuke and the other OpenFX hosts
 
-The same effect, with two differences forced by the host:
+The same effect, with two differences forced on it by the host:
 
-- **There is no transport**, so the bar divisions count against a **Tempo**
+- **There's no transport**, so the bar divisions count against a **Tempo**
   control that only exists in that build.
-- **There is no audio.** Rather than leave half the plugin dead, the rig is
-  driven by a **Kick** control — a pulse on a chosen division of that same
-  Tempo. It is a metronome rather than a microphone, but the rig, the resonance,
+- **There's no audio.** Rather than leave half the plugin dead, the rig is
+  driven by a **Kick** control, a pulse on a chosen division of that same
+  Tempo. It's a metronome rather than a microphone, but the rig, the resonance,
   the damping and the travel limit are the same code answering it.
 
-Everything else — the lens, the depth sources, the five rack modes, the presets
-— is the same, and a preset looks identical in both hosts because both read one
+Everything else (the lens, the depth sources, the five rack modes, the presets)
+is the same, and a preset looks identical in both hosts because both read one
 table.
