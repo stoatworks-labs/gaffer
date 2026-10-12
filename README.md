@@ -1,30 +1,27 @@
 # gaffer
 
 > **AI-assisted project.** This codebase was created with [Claude](https://claude.com/claude-code)
-> (Anthropic), directed and reviewed by a human author. The lens is verified
-> numerically by an offline harness that drives the real plugin class in a
-> headless GL context: a point of light is put through it and the disc that
-> comes out is measured against an independent C++ implementation of the circle
-> of confusion across 48 parameter combinations, in x and y separately, with the
-> light it neither created nor destroyed measured at 1.0000 of the pinhole. The
-> focus puller and the rig are asserted directly over tens of thousands of
-> frames, and both nulls are exact to the byte. It has **never been loaded into
-> Resolume**, the only OpenFX host it has rendered in is Resolve's Fusion page,
-> no audio has ever reached it, and no Windows build has been run (see
-> [Status](#status)). Check it in your own rig before trusting it in a show.
+> (Anthropic), directed and reviewed by a human author. The lens is checked numerically by an
+> offline harness that drives the real plugin code without a host: the discs that come out are
+> measured against an independent C++ implementation of the circle of confusion, and both nulls
+> are exact to the byte. It's **never been loaded into Resolume**, the only OpenFX host it's
+> rendered in is Resolve's Fusion page, no audio has ever reached it, and no Windows build has
+> been run. Check it in your own rig before you trust it in a show. The details are under
+> [Status](#status).
 
-A simulated lens on a depth map, with the music holding it — an
-[FFGL](https://github.com/resolume/ffgl) effect for [Resolume](https://resolume.com)
-Arena and Avenue, and an [OpenFX](https://openeffects.org) effect for DaVinci
-Resolve, Nuke, Natron and Vegas.
+A simulated lens on a depth map, with the music holding the camera. It's an
+[FFGL](https://github.com/resolume/ffgl) effect for [Resolume](https://resolume.com) Arena
+and Avenue, and an [OpenFX](https://openeffects.org) effect for DaVinci Resolve, Nuke, Natron
+and Vegas. You get shallow depth of field, a focus puller, and a camera rig that rattles
+every time the kick drum hits.
 
 ![The gaffer browser demo: the synthetic scene through the lens, with the plugin's lens, depth and rig parameters beside it](docs/screenshots/gaffer-demo.png)
 
-<sub>The browser demo, not the plugin: gaffer's own GLSL ported to WebGL2 and running on a generated scene in the page — the same parameters and the same maths as the FFGL build, with the lens, depth and rig controls it declares on the right. Not a Resolume capture.</sub>
+<sub>That's the browser demo rather than the plugin: gaffer's own GLSL ported to WebGL2 and running on a scene the page generates, with the same parameters and maths as the FFGL build and the lens, depth and rig controls it declares on the right. It isn't a Resolume capture.</sub>
 
 [![gaffer — depth of field with a rig that rings, for Resolume](docs/video-thumb.png)](https://www.youtube.com/watch?v=XUdCae0fhRU)
 
-*[Watch it](https://www.youtube.com/watch?v=XUdCae0fhRU) — 55 seconds: the aperture opening and the focal plane sliding out to the corners, a flat field of highlights brought back as discs and then into focus, Luma depth with the plane crossing the lights, Pull racking on the bar with Breathing up, Sweep and Stutter, the rig rung by a synthetic kick on a heavy tripod and a light head, Damping and Roll, and Aperture and Breathing to zero: the pinhole, and the clip untouched. Rendered by the plugin's own harness over Resolume's bundled demo clips, not captured from Resolume.*
+*[Watch it](https://www.youtube.com/watch?v=XUdCae0fhRU) (55 seconds): the aperture opening and the focal plane sliding out to the corners, a flat field of highlights brought back as discs and then into focus, Luma depth with the plane crossing the lights, Pull racking on the bar with Breathing up, Sweep and Stutter, the rig rung by a synthetic kick on a heavy tripod and a light head, Damping and Roll, and Aperture and Breathing to zero: the pinhole, with the clip untouched. Rendered by the plugin's own harness over Resolume's bundled demo clips rather than captured from Resolume.*
 
 <!-- downloads:start -->
 
@@ -71,34 +68,32 @@ macOS builds are signed and notarised and open normally. The Windows builds are 
 
 ## What it does
 
-One plane of the picture is sharp and everything else is a disc, sized by how
-far it is from that plane. Two things then move it.
+One plane of the picture is sharp and everything else is a disc, sized by how far it is
+from that plane. Then two things move it.
 
-**The rattle.** A camera in front of a loud PA does not shake like the music, it
-shakes like a camera: the pressure hits an assembly with a mass and a stiffness
-of its own, and it answers at *its* frequency and keeps answering after the hit
-has gone. That is what the rig here is — four damped oscillators, one per axis,
-driven by the arrival of the bass rather than by its level, so a kick rings it
-and a drone does not move it. The lens elements are part of the same assembly,
-so the frame moves and the focus comes off together.
+**The rattle.** A camera in front of a loud PA doesn't shake in time with the music. It
+shakes like a camera: the pressure hits an assembly with a mass and a stiffness of its own,
+which answers at *its* frequency and carries on answering after the hit's gone. That's what
+the rig here is: four damped oscillators, one per axis, driven by the arrival of the bass
+rather than its level, so a kick rings it and a drone doesn't move it. The lens elements are
+part of the same assembly, so the frame moves and the focus comes off at the same time.
 
 **The rack.** A focus puller with two marks taped on the barrel:
 
-- **Follow** — the Focus control is where you are *pointing*, and the hand takes
-  time to get there. Animate Focus in the host and the lens lags, because a
-  puller cannot teleport and neither can this.
-- **Pull** — a rack from one mark to the other on a cue: the bar line, a button,
-  or the kick drum.
-- **Sweep** — the hand never stops. Slow, it is a searching focus; fast, it is
-  the frame polling through every plane in the picture several times a second.
-- **Stutter** — a new plane on every cue. Focus as a rhythm part.
+- **Follow**: the Focus control is where you're *pointing*, and the hand takes time to get
+  there. Animate Focus in the host and the lens lags, because a focus puller can't teleport
+  and neither can this.
+- **Pull**: a rack from one mark to the other on a cue (the bar line, a button, or the kick
+  drum).
+- **Sweep**: the hand never stops. Slow, it's a searching focus; fast, it's the frame polling
+  through every plane in the picture several times a second.
+- **Stutter**: a new plane on every cue. Focus as a rhythm part.
 
-The depth comes from one of five places, and they are not five settings of one
-thing. **Radial** invents a field and works on any clip at all. **Luma** and
-**Alpha** read one out of the picture's own channels. **Split H** and **Split V**
-read it out of the other half of a double-width or double-height frame — the
-only one of the five that can carry a real, independent depth pass at full
-resolution.
+The depth comes from one of five places, and they're different things rather than five
+settings of one. **Radial** makes up a field and works on any clip at all. **Luma** and
+**Alpha** read one out of the picture's own channels. **Split H** and **Split V** read it out
+of the other half of a double-width or double-height frame, the only one of the five that can
+carry a real, independent depth pass at full resolution.
 
 ## Install
 
@@ -108,12 +103,12 @@ resolution.
 ~/Documents/Resolume Arena/Extra Effects/
 ```
 
-(or `Extra Effects` beside `Resolume Avenue`). Restart Resolume; the effect
-appears under Effects as **gaffer**.
+(or `Extra Effects` beside `Resolume Avenue`). Restart Resolume and the effect
+shows up under Effects as **gaffer**.
 
-macOS artefacts are Developer ID-signed and notarised, so they open with no
-warning; the Windows ones are unsigned and SmartScreen will object once. See
-[docs/UNSIGNED.md](docs/UNSIGNED.md).
+macOS artefacts are Developer ID-signed and notarised, so they open without a warning. The
+Windows ones are unsigned and SmartScreen will object once;
+[docs/UNSIGNED.md](docs/UNSIGNED.md) has the details.
 
 **Windows.** Copy `Gaffer.dll` into
 
@@ -123,14 +118,14 @@ warning; the Windows ones are unsigned and SmartScreen will object once. See
 
 **OpenFX** (Resolve, Nuke, Natron, Vegas). Copy `Gaffer.ofx.bundle` into
 `/Library/OFX/Plugins` (macOS) or `C:\Program Files\Common Files\OFX\Plugins`
-(Windows). It appears under **Stoatworks**.
+(Windows). It shows up under **Stoatworks**.
 
 **Resolve's Fusion page reports the frame rate on the effect but not on its clips.**
-The first OpenFX builds read a clip's rate, which Fusion leaves out, and failed
-every render there. Now Gaffer asks the output clip, the source clip and then the
-effect, so in Fusion the rack, the Tempo and the Kick run at the timeline's own rate
-(checked at 24 and 25 fps). It assumes 24 fps, Resolve's default timeline rate, only
-where a host reports no rate at all.
+The first OpenFX builds read a clip's rate, which Fusion leaves out, and failed every
+render there. Now Gaffer asks the output clip, then the source clip, then the effect, so in
+Fusion the rack, the Tempo and the Kick run at the timeline's own rate (checked at 24 and
+25 fps). It only assumes 24 fps, Resolve's default timeline rate, where a host doesn't report
+a rate at all.
 
 ## Controls
 
@@ -194,31 +189,29 @@ where a host reports no rate at all.
 Ten, in one dropdown: three rigs (**Kick Rattle**, **Subwoofer**, **Cheap
 Tripod**), five racks (**Rack A to B**, **Follow Focus**, **Focus Sweep**,
 **Focus Strobe**, **Focus Stutter**), one that ties them together
-(**Pull On Kick** — the rack fires on the bass, the camera shakes with it), and
-one that is only about the iris (**Bokeh Balls**).
+(**Pull On Kick**: the rack fires on the bass and the camera shakes with it), and one that's
+only about the iris (**Bokeh Balls**).
 
-Presets deliberately do not touch the Depth group. Whether a clip carries a
-usable depth map, in which channel and which way up, is a fact about the footage
-rather than a look.
+Presets leave the Depth group alone on purpose. Whether a clip carries a usable depth map,
+in which channel and which way up, is a fact about the footage, not a look.
 
 ## Two things worth knowing
 
-**Drive is zero out of the box.** With no audio routed nothing would move
-anyway, but with audio routed and Drive up, dropping this on a layer starts
-shaking the frame before you have seen what it does to a still picture. Shake,
-Roll, Defocus and the rig itself are all set to something useful — turning up
-the one control is the whole gesture.
+**Drive is zero out of the box.** With no audio routed nothing would move anyway, but with
+audio routed and Drive up, dropping this on a layer would start shaking the frame before
+you'd seen what it does to a still picture. Shake, Roll, Defocus and the rig itself are all
+set to something useful, so turning up that one control is all it takes.
 
-**A pinhole is exact.** Aperture at zero with Breathing at zero returns the
-picture unchanged, byte for byte — and so does a frame with the focal plane
-exactly on a flat depth field, with the whole gather running. Both are
-measured, not asserted. Breathing is the catch: it scales the frame with the
-focus even through a pinhole (1.0079 at the default Focus 0.55 and Breathing
-0.35), so Aperture alone is only the null with Breathing at zero or Focus at 0.5.
+**A pinhole is exact.** Aperture at zero with Breathing at zero gives you the picture back
+unchanged, byte for byte, and so does a frame with the focal plane exactly on a flat depth
+field, with the whole gather running. Both are measured, not just asserted. The catch is
+Breathing: it scales the frame with the focus even through a pinhole (1.0079 at the default
+Focus 0.55 and Breathing 0.35), so Aperture on its own is only the null with Breathing at
+zero or Focus at 0.5.
 
 ## Status
 
-Verified offline:
+Checked offline:
 
 | Check | Result |
 | --- | --- |
@@ -238,21 +231,21 @@ Verified offline:
 | Dead controls | none of 30 |
 | OpenFX under `ofxprobe` | loads, renders, both nulls exact, every preset byte-identical to its hand-set equivalent |
 
-What that does **not** cover:
+What that **doesn't** cover:
 
-- **It has never been loaded into Resolume.** Not once.
-- **In Resolve it has only been a Fusion tool.** v0.1.5 fixes the OpenFX build
-  there — the earlier builds failed every render on the Fusion page — and the
-  fix has rendered in a Fusion render job in Resolve Studio 21.1. The Edit and
-  Color pages, Nuke, Natron and Vegas have never seen it.
+- **It's never been loaded into Resolume.** Not once.
+- **In Resolve it's only been a Fusion tool.** v0.1.5 fixes the OpenFX build there (the
+  earlier builds failed every render on the Fusion page), and the fix has rendered in a
+  Fusion render job in Resolve Studio 21.1. The Edit and Color pages, Nuke, Natron and
+  Vegas have never seen it.
 - **No audio has ever reached it.** The FFT reader has only seen the harness's
   synthetic kick-and-hat. Whether Resolume's spectrum has the level the onset
   threshold assumes is the first thing to check.
-- **The transport has never been seen** — every bar-synced mode is driven by a
-  synthetic one.
+- **It's never seen a real transport.** Every bar-synced mode is driven by a synthetic one.
 - **No real depth pass has been through it.** Only a radial card, a luma
   checkerboard and a flat grey half-frame.
-- **The Windows build has never been run.** It is compiled in CI and ships with every release; v0.1.5 is current.
+- **The Windows build has never been run.** It's compiled in CI and ships with every
+  release; v0.1.5 is current.
 - **Nothing has been timed.** Extreme is 128 taps, each with its own depth
   fetch, and each of those is a 5-tap when Smooth is up.
 
@@ -270,7 +263,7 @@ macOS builds are universal (arm64 + x86_64) by default; add
 `-DCMAKE_OSX_ARCHITECTURES=arm64` for a faster development build. Windows needs
 GLEW, which arrives through `vcpkg.json`.
 
-Everything checkable without a host, in about eight seconds:
+Everything you can check without a host, in about eight seconds:
 
 ```bash
 tools/verify.sh
