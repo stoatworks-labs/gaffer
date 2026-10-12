@@ -597,7 +597,8 @@ Three things worth running there, all of which pass today:
   synthetic transport.
 - **No real depth pass has ever been through it.** The depth modes have only
   been fed a radial card, a luma checkerboard and a flat grey half-frame.
-- **The Windows build has never been run**, or built — no release has been cut.
+- **The Windows build has never been run.** `release.yml` has built it for every
+  release since v0.1.0, as a `.zip` and an installer.
   A `workflow_dispatch` run of `release.yml` builds both platforms and publishes
   nothing, which is the cheap way to check the build before tagging.
 - **Nothing has been timed at all.** Extreme is 128 taps, each with its own

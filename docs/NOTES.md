@@ -7,7 +7,7 @@ person and dated by when each thing was learned — that date is usually the use
 Cross-cutting notes that are not specific to this repo live in
 [fleet-notes](https://github.com/stoatworks-labs/fleet-notes).
 
-*gaffer — audio-reactive simulated lens on a depth map for Resolume (FFGL) + OpenFX; LOCAL ONLY, never pushed, never loaded into any host*
+*gaffer — audio-reactive simulated lens on a depth map for Resolume (FFGL) + OpenFX; public, released since v0.1.0 (2026-08-25); never loaded into Resolume, and in Resolve only rendered as a Fusion tool*
 
 **gaffer** (started 2026-08-23) — a simulated lens on a depth map with the music
 holding it. `~/projects/resolume/gaffer`, FFGL id **`GF01`**, OFX

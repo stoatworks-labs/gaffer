@@ -17,7 +17,7 @@ every time the kick drum hits.
 
 ![The gaffer browser demo: the synthetic scene through the lens, with the plugin's lens, depth and rig parameters beside it](docs/screenshots/gaffer-demo.png)
 
-<sub>That's the browser demo rather than the plugin: gaffer's own GLSL ported to WebGL2 and running on a scene the page generates, with the same parameters and maths as the FFGL build and the lens, depth and rig controls it declares on the right. It isn't a Resolume capture.</sub>
+<sub>That's the browser demo rather than the plugin: gaffer's own GLSL ported to WebGL2 and running on a scene the page generates, with the same maths as the plugin and the OpenFX build's lens, depth and rig controls on the right (a Tempo and a Kick stand in for audio). It isn't a Resolume capture.</sub>
 
 [![gaffer — depth of field with a rig that rings, for Resolume](docs/video-thumb.png)](https://www.youtube.com/watch?v=XUdCae0fhRU)
 
@@ -104,7 +104,7 @@ carry a real, independent depth pass at full resolution.
 ```
 
 (or `Extra Effects` beside `Resolume Avenue`). Restart Resolume and the effect
-shows up under Effects as **gaffer**.
+shows up under Effects as **SW Gaffer**.
 
 macOS artefacts are Developer ID-signed and notarised, so they open without a warning. The
 Windows ones are unsigned and SmartScreen will object once;
