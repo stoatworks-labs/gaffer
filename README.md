@@ -15,6 +15,8 @@ and Avenue, and an [OpenFX](https://openeffects.org) effect for DaVinci Resolve,
 and Vegas. You get shallow depth of field, a focus puller, and a camera rig that rattles
 every time the kick drum hits.
 
+The [project page](https://stoatworks-labs.com/software/gaffer/) has the downloads, the [user guide](https://stoatworks-labs.com/software/gaffer/guide/), the video and the [browser demo](https://gaffer-demo.stoatworks-labs.com/).
+
 ![The gaffer browser demo: the synthetic scene through the lens, with the plugin's lens, depth and rig parameters beside it](docs/screenshots/gaffer-demo.png)
 
 <sub>That's the browser demo rather than the plugin: gaffer's own GLSL ported to WebGL2 and running on a scene the page generates, with the same maths as the plugin and the OpenFX build's lens, depth and rig controls on the right (a Tempo and a Kick stand in for audio). It isn't a Resolume capture.</sub>
